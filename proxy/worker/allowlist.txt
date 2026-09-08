@@ -1,0 +1,46 @@
+# Legit sites EXEMPT from word-based page blocking (URL words + page-content
+# words). One domain per line; all subdomains are included automatically.
+# NOTE: this does NOT exempt a site from DNS domain blocks (porn/malware/
+# social lists) or from image scanning — only from word-content false
+# positives (e.g. a news article mentioning a blocked word once).
+# gov / edu / ac.il suffixes are always exempt (see icap_worker.py).
+
+# --- Israeli news ---
+ynet.co.il
+walla.co.il
+maariv.co.il
+israelhayom.co.il
+haaretz.co.il
+haaretz.com
+globes.co.il
+calcalist.co.il
+themarker.com
+kikar.co.il
+srugim.co.il
+hidabroot.org
+mako.co.il
+n12.co.il
+kan.org.il
+13tv.co.il
+
+# --- International news / reference ---
+bbc.com
+bbc.co.uk
+cnn.com
+reuters.com
+nytimes.com
+washingtonpost.com
+theguardian.com
+apnews.com
+npr.org
+france24.com
+dw.com
+wikipedia.org
+wikimedia.org
+britannica.com
+khanacademy.org
+
+# --- Major platforms (search results contain words; still DNS/image filtered) ---
+google.com
+microsoft.com
+apple.com

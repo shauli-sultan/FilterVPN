@@ -57,7 +57,7 @@ Server itself: `10.100.0.1/16` on `wg0`. Each `/24` holds 240+ clients today
 | `coredns/` | `Corefile.5351`–`5354` (one per tier), `install-coredns.sh`, `update-blocklists.sh`, `gen-block-conf.py`, `blocklists/` domain lists + generated snippets (blocked names → block-page IP) |
 | `blockpage/` | Hebrew RTL block-explanation server (`server.py`, `block.html`, systemd unit) — shown instead of a bare connection failure |
 | `routing/` | `pbr.sh` (PBR tables, NAT, anti-spoof, inter-tier isolation, DNS DNAT, proxy REDIRECT, DoH/DoT blocks), `rules.v4` baseline |
-| `proxy/` | `squid.conf`, `ca/gen-ca.sh` (offline Root CA), `worker/icap_worker.py` (NudeNet image screening + Hebrew blocked-image SVG, heuristic fallback), `worker/requirements-ml.txt`, `hebrew-errors/` Squid deny page |
+| `proxy/` | `squid.conf`, `ca/gen-ca.sh` (offline Root CA), `worker/icap_worker.py` (NudeNet image screening + Hebrew blocked-image SVG, URL/page word blocking with news `allowlist.txt`, heuristic fallback), `worker/requirements-ml.txt`, `hebrew-errors/` Squid deny page |
 | `portal/` | Hebrew RTL self-service portal (`app.py`: form enroll + `.conf`/QR download, JSON API), `requirements.txt` |
 | `tests/` | `test-dns-tiers.sh`, `test-youtube-restrict.sh`, `test-wireguard-load.sh` |
 
