@@ -195,7 +195,8 @@ Expected: `www.youtube.com` resolves normally on 5351/5352 but CNAMEs to
 
 ```bash
 cd ~/filtervpn && git pull
-sudo cp ~/filtervpn/coredns/Corefile.* /opt/filtervpn/coredns/
+sudo cp ~/filtervpn/coredns/Corefile.* ~/filtervpn/coredns/gen-block-conf.py /opt/filtervpn/coredns/
+sudo cp ~/filtervpn/coredns/blocklists/domains-*.txt ~/filtervpn/coredns/blocklists/block-*.conf /opt/filtervpn/coredns/blocklists/
 sudo systemctl restart coredns@5351 coredns@5352 coredns@5353 coredns@5354
 sudo cp ~/filtervpn/proxy/squid.conf /etc/squid/squid.conf && sudo systemctl reload squid
 sudo bash ~/filtervpn/routing/pbr.sh up

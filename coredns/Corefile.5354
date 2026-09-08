@@ -1,11 +1,11 @@
-# Tier 4 (Max block) — port 5354. Tier 3 + social NXDOMAIN.
+# Tier 4 (Max block) — port 5354. Tier 3 sinkholes + social sinkhole.
 .:5354 {
   errors
   log
+  import /opt/filtervpn/coredns/blocklists/block-porn.conf
+  import /opt/filtervpn/coredns/blocklists/block-malware.conf
+  import /opt/filtervpn/coredns/blocklists/block-social.conf
   cache 60
-  file /opt/filtervpn/coredns/blocklists/malware.db malware.local
-  file /opt/filtervpn/coredns/blocklists/adult.db adult.local
-  file /opt/filtervpn/coredns/blocklists/social.db social.local
   rewrite name exact www.youtube.com restrict.youtube.com answer auto
   rewrite name exact m.youtube.com restrict.youtube.com answer auto
   rewrite name exact youtubei.googleapis.com restrict.youtube.com answer auto

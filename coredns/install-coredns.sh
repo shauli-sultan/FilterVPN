@@ -11,6 +11,7 @@ if [ ! -x "$BIN" ]; then
 fi
 mkdir -p /opt/filtervpn/coredns
 cp -r "$(dirname "$0")"/* /opt/filtervpn/coredns/ 2>/dev/null || cp -r ./coredns/* /opt/filtervpn/coredns/ || true
+python3 /opt/filtervpn/coredns/gen-block-conf.py 2>/dev/null || python3 "$(dirname "$0")/gen-block-conf.py" || true
 for port in 5351 5352 5353 5354; do
 cat > "/etc/systemd/system/coredns@${port}.service" <<EOF
 [Unit]

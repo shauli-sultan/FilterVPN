@@ -31,7 +31,7 @@ Adding a user = allocating an IP in their tier's pool and adding one
 
 | Tier | Pool | DNS | Behavior |
 |------|------|-----|----------|
-| **1 Basic** | `10.100.1.0/24` (→`/20`) | :5351 | Malware/phishing + extreme-adult DNS block. Everything else full speed, direct egress |
+| **1 Basic** | `10.100.1.0/24` (→`/20`) | :5351 | Porn/adult + malware/phishing DNS sinkhole (65+ base domains, apex + subdomains). Everything else full speed, direct egress |
 | **2 Standard** | `10.100.2.0/24` (→`/20`) | :5352 | Tier 1 + transparent Squid proxy with heuristic image/URL screening (needs Root CA on device) |
 | **3 Strict + YouTube** | `10.100.3.0/24` (→`/20`) | :5353 | Tier 2 + YouTube Restricted Mode enforced via DNS CNAME → `restrict.youtube.com` |
 | **4 Max block** | `10.100.4.0/24` (→`/20`) | :5354 | Tier 3 DNS + TikTok/Instagram/Facebook/Reddit/X/Snapchat sunk to `0.0.0.0`; direct egress (no proxy) |
@@ -54,7 +54,7 @@ Server itself: `10.100.0.1/16` on `wg0`. Each `/24` holds 240+ clients today
 | `deploy/oci-terraform/main.tf` | VCN, A1.Flex 2OCPU/12GB instance, security list (51820/udp, 443, 22) |
 | `deploy/cloud-init.yaml` | Packages + `ip_forward` bootstrap |
 | `wireguard/` | `wg0.conf.template`, `gen-client.py` (IPAM in `ipam.db`, `.conf` + QR output), `add-peer.sh`, `revoke-peer.sh` |
-| `coredns/` | `Corefile.5351`–`5354` (one per tier), `install-coredns.sh`, `update-blocklists.sh`, `blocklists/` zone files |
+| `coredns/` | `Corefile.5351`–`5354` (one per tier), `install-coredns.sh`, `update-blocklists.sh`, `gen-block-conf.py`, `blocklists/` domain lists + generated sinkhole snippets |
 | `routing/` | `pbr.sh` (PBR tables, NAT, anti-spoof, inter-tier isolation, DNS DNAT, proxy REDIRECT, DoH/DoT blocks), `rules.v4` baseline |
 | `proxy/` | `squid.conf`, `ca/gen-ca.sh` (offline Root CA), `worker/icap_worker.py` (heuristic content screen, stdlib only) |
 | `portal/` | `app.py` (FastAPI self-service wrapping `gen-client.py`, token auth), `requirements.txt` |

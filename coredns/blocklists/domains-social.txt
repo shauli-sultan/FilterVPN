@@ -1,0 +1,9 @@
+# Social/distraction base domains — apex only, one per line.
+# Sunk to 0.0.0.0 on TIER 4 ONLY (Corefile.5354 imports block-social.conf).
+facebook.com
+instagram.com
+reddit.com
+snapchat.com
+tiktok.com
+twitter.com
+x.com

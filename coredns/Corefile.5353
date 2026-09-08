@@ -1,10 +1,10 @@
-# Tier 3 (Strict + YouTube) — port 5353. Tier1/2 lists + YouTube CNAME to restrict host.
+# Tier 3 (Strict + YouTube) — port 5353. Tier 1/2 sinkholes + YouTube CNAME to restrict host.
 .:5353 {
   errors
   log
+  import /opt/filtervpn/coredns/blocklists/block-porn.conf
+  import /opt/filtervpn/coredns/blocklists/block-malware.conf
   cache 60
-  file /opt/filtervpn/coredns/blocklists/malware.db malware.local
-  file /opt/filtervpn/coredns/blocklists/adult.db adult.local
   rewrite name exact www.youtube.com restrict.youtube.com answer auto
   rewrite name exact m.youtube.com restrict.youtube.com answer auto
   rewrite name exact youtubei.googleapis.com restrict.youtube.com answer auto

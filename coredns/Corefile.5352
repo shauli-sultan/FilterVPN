@@ -1,10 +1,10 @@
-# Tier 2 (Standard) — port 5352. Same as Tier 1 (proxy handles content layer).
+# Tier 2 (Standard) — port 5352. Same DNS sinkholes as Tier 1 (proxy handles content layer).
 .:5352 {
   errors
   log
+  import /opt/filtervpn/coredns/blocklists/block-porn.conf
+  import /opt/filtervpn/coredns/blocklists/block-malware.conf
   cache 60
-  file /opt/filtervpn/coredns/blocklists/malware.db malware.local
-  file /opt/filtervpn/coredns/blocklists/adult.db adult.local
   forward . 1.1.1.1 8.8.8.8 {
     max_concurrent 1000
   }
