@@ -26,6 +26,8 @@ Server: `10.100.0.1/16` on `wg0`.
 
 ## Quick start (on the OCI instance)
 
+Full step-by-step over SSH: [`docs/deploy-ssh.md`](docs/deploy-ssh.md).
+
 ```bash
 sudo bash deploy/cloud-init.yaml  # or apply via Terraform user_data
 sudo bash routing/pbr.sh
