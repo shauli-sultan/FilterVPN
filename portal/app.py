@@ -236,8 +236,8 @@ def _success_page(name, tier_he, ip):
 <div class="hero"><h1>✅ מוכן! הקובץ של {name} נוצר</h1><p>{tier_he} — הכל מוכן להפעלה</p></div>
 <div class="card" style="margin-top:16px">
 <div class="ok">הורידו את הקובץ או סרקו את הקוד — ואז הדליקו באפליקציה.</div>
-<p><a class="btnlink" href="/files/{name}.conf">⬇️ הורד קובץ</a>
-<a class="btnlink" href="/files/{name}.png">🔳 הורד קוד לסריקה</a>
+<p><a class="btnlink" href="/files/{name}.conf" download="{name}.conf">⬇️ הורד קובץ</a>
+<a class="btnlink" href="/files/{name}.png" download="{name}.png">🔳 הורד קוד לסריקה</a>
 <a class="btn-ca" href="/ca.crt">📜 קובץ אבטחה (אם צריך)</a></p>
 <div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;margin:12px 0"><b>איך מפעילים? 3 צעדים פשוטים:</b><br>
 <small style="line-height:1.8">
@@ -255,8 +255,8 @@ def _change_success(name, tier_he, ip):
 <div class="hero"><h1>✅ הרמה עודכנה!</h1><p>הקובץ החדש של <b>{name}</b> מוכן — {tier_he}</p></div>
 <div class="card" style="margin-top:16px">
 <div class="ok">הורידו את הקובץ החדש ופתחו אותו שוב ב-WireGuard. החיבור הישן יפסיק לעבוד.</div>
-<p><a class="btnlink" href="/files/{name}.conf">⬇️ הורד קובץ מעודכן</a>
-<a class="btnlink" href="/files/{name}.png">🔳 קוד מעודכן</a></p>
+<p><a class="btnlink" href="/files/{name}.conf" download="{name}.conf">⬇️ הורד קובץ מעודכן</a>
+<a class="btnlink" href="/files/{name}.png" download="{name}.png">🔳 קוד מעודכן</a></p>
 <p><a href="/">← הרשמה</a> · <a href="/change">עוד שינוי</a></p>
 </div>
 """
@@ -359,10 +359,14 @@ def download_file(fname: str):
     path = os.path.join(CLIENTS, fname)
     if not os.path.isfile(path):
         raise HTTPException(404, "not found")
-    media = "text/plain" if fname.endswith(".conf") else "image/png"
+    # Use octet-stream for .conf so Windows/Chrome don't append .txt (was text/plain → .conf.txt)
+    media = "application/octet-stream" if fname.endswith(".conf") else "image/png"
     with open(path, "rb") as f:
         return Response(f.read(), media_type=media,
-                        headers={"Content-Disposition": f"attachment; filename={fname}"})
+                        headers={
+                            "Content-Disposition": f'attachment; filename="{fname}"',
+                            "X-Content-Type-Options": "nosniff",
+                        })
 
 
 class Enroll(BaseModel):
