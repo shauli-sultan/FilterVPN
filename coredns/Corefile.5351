@@ -1,9 +1,10 @@
-# Tier 1 (Basic) — port 5351. Porn + malware DNS sinkhole, else upstream.
+# Tier 1 (Basic) — port 5351. Porn + malware DNS sinkhole + SafeSearch, else upstream.
 .:5351 {
   errors
   log
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
+  import /opt/filtervpn/coredns/safesearch.conf
   cache 60
   forward . 1.1.1.1 8.8.8.8 {
     max_concurrent 1000

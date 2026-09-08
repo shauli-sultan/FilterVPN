@@ -5,27 +5,13 @@
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
   import /opt/filtervpn/coredns/blocklists/block-social.conf
+  import /opt/filtervpn/coredns/safesearch.conf
   cache 60
   rewrite name exact www.youtube.com restrict.youtube.com answer auto
   rewrite name exact m.youtube.com restrict.youtube.com answer auto
   rewrite name exact youtubei.googleapis.com restrict.youtube.com answer auto
   rewrite name exact youtube.googleapis.com restrict.youtube.com answer auto
   rewrite name exact www.youtube-nocookie.com restrict.youtube.com answer auto
-  # Google SafeSearch (official method: CNAME to forcesafesearch.google.com)
-  rewrite name exact www.google.com forcesafesearch.google.com answer auto
-  rewrite name exact google.com forcesafesearch.google.com answer auto
-  rewrite name exact www.google.co.il forcesafesearch.google.com answer auto
-  rewrite name exact google.co.il forcesafesearch.google.com answer auto
-  rewrite name exact www.google.co.uk forcesafesearch.google.com answer auto
-  rewrite name exact google.co.uk forcesafesearch.google.com answer auto
-  rewrite name exact www.google.de forcesafesearch.google.com answer auto
-  rewrite name exact www.google.fr forcesafesearch.google.com answer auto
-  rewrite name exact www.google.ca forcesafesearch.google.com answer auto
-  rewrite name exact www.google.com.au forcesafesearch.google.com answer auto
-  rewrite name exact www.google.it forcesafesearch.google.com answer auto
-  rewrite name exact www.google.es forcesafesearch.google.com answer auto
-  rewrite name exact www.google.nl forcesafesearch.google.com answer auto
-  rewrite name exact images.google.com forcesafesearch.google.com answer auto
   forward . 1.1.1.1 8.8.8.8 {
     max_concurrent 1000
   }
