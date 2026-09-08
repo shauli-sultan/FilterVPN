@@ -201,7 +201,8 @@ bash ~/filtervpn/tests/test-wireguard-load.sh
 ```
 
 Expected: `www.youtube.com` resolves normally on 5351/5352 but CNAMEs to
-`restrict.youtube.com` on 5353/5354; `tiktok.com` and all porn/hentai domains
+`restrict.youtube.com` on 5353/5354; `www.google.com` / `www.google.co.il`
+CNAME to `forcesafesearch.google.com` on 5353/5354 (SafeSearch locked on); `tiktok.com` and all porn/hentai domains
 resolve to `10.100.0.1` — open `http://<any-blocked-site>/` in a browser to see
 the Hebrew block explanation. (HTTPS to blocked domains can't show the page
 without MITM — browser shows a connection error instead; Tier 2/3 HTTPS gets

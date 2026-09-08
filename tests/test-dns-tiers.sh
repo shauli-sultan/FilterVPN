@@ -17,3 +17,12 @@ for port in 5351 5352 5353 5354; do
 done
 echo "== Tier4: youtube still restricted =="
 dig +short @127.0.0.1 -p 5354 www.youtube.com | head -3
+echo "== Tier1 (5351): google resolves normally =="
+dig +short @127.0.0.1 -p 5351 www.google.com | head -2
+echo "== Tier3/4: google must CNAME forcesafesearch.google.com =="
+for port in 5353 5354; do
+  for d in www.google.com www.google.co.il images.google.com; do
+    printf "port %s %-20s -> " "$port" "$d"
+    dig +short @127.0.0.1 -p "$port" "$d" | head -2 | tr '\n' ' '; echo
+  done
+done
