@@ -1,0 +1,10 @@
+# Caddyfile for FilterVPN — portal + block page
+# filter-vpn.duckdns.org → portal (127.0.0.1:8000) with auto TLS via Let's Encrypt
+# http://10.100.0.1 → Hebrew block page (127.0.0.1:8081) — sink for DNS-blocked domains
+filter-vpn.duckdns.org {
+    reverse_proxy 127.0.0.1:8000
+    encode gzip
+}
+http://10.100.0.1 {
+    reverse_proxy 127.0.0.1:8081
+}

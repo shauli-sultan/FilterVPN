@@ -1,0 +1,13 @@
+[Unit]
+Description=FilterVPN ICAP worker (127.0.0.1:1344)
+After=network.target squid.service
+Wants=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/ubuntu/filtervpn/proxy/worker/icap_worker.py --host 127.0.0.1 --port 1344
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

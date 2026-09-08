@@ -1,11 +1,11 @@
 [Unit]
-Description=FilterVPN Hebrew block page (:80 on VPN server IP)
+Description=FilterVPN Hebrew block page (127.0.0.1:8081 fronted by Caddy on 10.100.0.1:80)
 After=network-online.target wg-quick@wg0.service
 Wants=network-online.target
 
 [Service]
 ExecStart=/usr/bin/python3 /opt/filtervpn/blockpage/server.py
-Environment=BLOCK_HOST=10.100.0.1 BLOCK_PORT=80
+Environment=BLOCK_HOST=127.0.0.1 BLOCK_PORT=8081
 Restart=always
 RestartSec=5
 
