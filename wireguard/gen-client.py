@@ -51,14 +51,29 @@ def main():
     ip = next_ip(conn, args.tier)
 
     cpriv, cpub = wg_genkey()
-    # Server pubkey: try to derive from live config, else placeholder
-    spub = os.environ.get("FILTERVPN_SERVER_PUBKEY", "__SERVER_PUBLIC_KEY__")
-    try:
-        out = subprocess.run(["wg", "show", "wg0", "public-key"], capture_output=True, text=True).stdout.strip()
-        if out:
-            spub = out
-    except Exception:
-        pass
+    # Server pubkey: try env, then wg show (with sudo), then /etc/wireguard/server.pub
+    spub = os.environ.get("FILTERVPN_SERVER_PUBKEY", "")
+    if not spub or spub == "__SERVER_PUBLIC_KEY__":
+        # try wg show without sudo, then with sudo, then file
+        for cmd in (["wg", "show", "wg0", "public-key"], ["sudo", "wg", "show", "wg0", "public-key"], ["sudo", "cat", "/etc/wireguard/server.pub"]):
+            try:
+                out = subprocess.run(cmd, capture_output=True, text=True, timeout=2).stdout.strip()
+                if out and len(out) >= 40 and " " not in out:
+                    spub = out
+                    break
+            except Exception:
+                continue
+        if not spub or spub == "__SERVER_PUBLIC_KEY__":
+            try:
+                # fallback: read server.pub directly if readable
+                with open("/etc/wireguard/server.pub", encoding="utf-8") as f:
+                    cand = f.read().strip()
+                    if cand:
+                        spub = cand
+            except Exception:
+                pass
+    if not spub:
+        spub = "__SERVER_PUBLIC_KEY__"
 
     client_conf = f"""[Interface]
 PrivateKey = {cpriv}

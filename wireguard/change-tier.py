@@ -149,14 +149,27 @@ def main():
     else:
         cpriv, cpub = wg_genkey()
 
-    # Server pubkey
-    spub = os.environ.get("FILTERVPN_SERVER_PUBKEY", "__SERVER_PUBLIC_KEY__")
-    try:
-        out = subprocess.run(["wg", "show", "wg0", "public-key"], capture_output=True, text=True).stdout.strip()
-        if out:
-            spub = out
-    except Exception:
-        pass
+    # Server pubkey: try env, then wg show (with sudo), then server.pub file
+    spub = os.environ.get("FILTERVPN_SERVER_PUBKEY", "")
+    if not spub or spub == "__SERVER_PUBLIC_KEY__":
+        for cmd in (["wg", "show", "wg0", "public-key"], ["sudo", "wg", "show", "wg0", "public-key"], ["sudo", "cat", "/etc/wireguard/server.pub"]):
+            try:
+                out = subprocess.run(cmd, capture_output=True, text=True, timeout=2).stdout.strip()
+                if out and len(out) >= 40 and " " not in out:
+                    spub = out
+                    break
+            except Exception:
+                continue
+        if not spub:
+            try:
+                with open("/etc/wireguard/server.pub", encoding="utf-8") as f:
+                    cand = f.read().strip()
+                    if cand:
+                        spub = cand
+            except Exception:
+                pass
+    if not spub:
+        spub = "__SERVER_PUBLIC_KEY__"
 
     # Update IPAM atomically: delete old, insert new
     conn.execute("DELETE FROM leases WHERE name=?", (args.name,))
