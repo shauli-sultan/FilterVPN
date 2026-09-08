@@ -1,12 +1,13 @@
-"""FilterVPN self-service portal (Hebrew, RTL) wrapping wireguard/gen-client.py.
-Run: ADMIN_TOKEN=secret ENDPOINT=1.2.3.4:51820 uvicorn portal.app:app --port 8000
-Keep on localhost behind TLS reverse proxy; never expose the token endpoint plain.
+"""FilterVPN self-service portal (Hebrew, RTL) — open enrollment, no admin code.
+CA is downloadable directly from the site.
+Run: ENDPOINT=filter-vpn.duckdns.org:51820 uvicorn portal.app:app --port 8000
+Behind Caddy with TLS.
 """
 import os
 import re
 import subprocess
 import sys
-from fastapi import FastAPI, Form, Header, HTTPException
+from fastapi import FastAPI, Form, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 
@@ -14,8 +15,14 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GEN = os.path.join(BASE, "wireguard", "gen-client.py")
 CHANGE = os.path.join(BASE, "wireguard", "change-tier.py")
 CLIENTS = os.path.join(BASE, "wireguard", "clients")
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "change-me")
-ENDPOINT = os.environ.get("ENDPOINT", "__PUBLIC_IP__:51820")
+ENDPOINT = os.environ.get("ENDPOINT", "filter-vpn.duckdns.org:51820")
+
+# CA locations (repo copy + deployed copy)
+CA_CANDIDATES = [
+    os.path.join(BASE, "proxy", "ca", "FilterVPN-RootCA.crt"),
+    "/opt/filtervpn/proxy/ca/FilterVPN-RootCA.crt",
+    "/home/ubuntu/filtervpn/proxy/ca/FilterVPN-RootCA.crt",
+]
 
 app = FastAPI(title="FilterVPN")
 
@@ -26,70 +33,65 @@ TIERS_HE = {
     4: "רמה 4 — מקסימלי",
 }
 
-# Detailed tier info for the nice UI
 TIER_DETAILS = {
     1: {
         "icon": "🛡️",
         "title": "רמה 1 — בסיסי",
-        "subtitle": "הגנה שקטה, מהירות מלאה",
+        "subtitle": "הגנה קלה, גלישה מהירה",
         "color": "#10b981",
-        "for_who": "למי שצריך סינון קל בלי להאט את הגלישה",
+        "for_who": "למבוגרים שרוצים הגנה בסיסית",
         "points": [
-            "חסימת אתרי פורנו, האנטאי ותוכן למבוגרים (DNS)",
-            "חסימת נוזקות ופישינג",
-            "Google SafeSearch מופעל תמיד",
-            "יציאה ישירה לאינטרנט — מהיר, בלי פרוקסי",
-            "וואטסאפ עובד בכל הרמות",
+            "לא רואים אתרי מבוגרים ופורנו",
+            "אתרים מסוכנים שמנסים לגנוב סיסמאות נחסמים",
+            "החיפוש בגוגל בטוח יותר",
+            "האינטרנט נשאר מהיר מאוד",
+            "וואטסאפ עובד רגיל",
         ],
-        "dns": "CoreDNS :5351",
+        "dns": "קל ומהיר",
     },
     2: {
         "icon": "🔍",
         "title": "רמה 2 — רגיל",
-        "subtitle": "+ סינון תמונות חכם",
+        "subtitle": "מוסיף סינון תמונות",
         "color": "#3b82f6",
-        "for_who": "לילדים ונוער — מסנן גם תמונות חשודות",
+        "for_who": "לילדים - מסנן גם תמונות",
         "points": [
-            "כל מה שברמה 1",
-            "סינון תמונות וכתובות חשודות (Squid + ICAP)",
-            "תמונות לא ראויות מוחלפות באיור בעברית",
-            "עמודי אינטרנט עם מילים אסורות נחסמים",
-            "דורש התקנת תעודת FilterVPN-RootCA פעם אחת",
+            "כל מה שיש ברמה 1",
+            "תמונות לא מתאימות נחסמות ומתחלפות בהסבר בעברית",
+            "דפים עם מילים לא ראויות נחסמים",
+            "צריך להתקין פעם אחת קובץ אבטחה קטן (מורידים כאן למטה)",
         ],
-        "dns": "CoreDNS :5352 → פרוקסי :3128/:3129",
+        "dns": "מסנן תמונות",
     },
     3: {
         "icon": "🎯",
         "title": "רמה 3 — מחמיר",
-        "subtitle": "+ יוטיוב מוגבל",
+        "subtitle": "יוטיוב בטוח לילדים",
         "color": "#f59e0b",
-        "for_who": "לסביבה חינוכית — יוטיוב נקי",
+        "for_who": "ללימודים — יוטיוב נקי",
         "points": [
-            "כל מה שברמה 2",
-            "יוטיוב במצב מוגבל (Restricted Mode) — CNAME ל-restrict.youtube.com",
-            "חיפוש גוגל מוגבל — forcesafesearch.google.com",
-            "אפליקציות (YouTube/IG/TikTok) מוחלשות ברמת DNS בלבד",
+            "כל מה שיש ברמה 2",
+            "יוטיוב עובד רק במצב מוגבל (בלי סרטונים למבוגרים)",
+            "החיפוש בגוגל וביוטיוב מסונן",
         ],
-        "dns": "CoreDNS :5353 + פרוקסי",
+        "dns": "יוטיוב מוגבל",
     },
     4: {
         "icon": "🔒",
         "title": "רמה 4 — מקסימלי",
-        "subtitle": "סביבה סגורה",
+        "subtitle": "בלי רשתות חברתיות",
         "color": "#ef4444",
-        "for_who": "לסביבה עם משמעת רשת גבוהה",
+        "for_who": "למי שרוצה שקט מהרשתות",
         "points": [
-            "כל מה שברמה 3",
-            "חסימת רשתות חברתיות: טיקטוק, אינסטגרם, פייסבוק, רדיט, X, סנאפצ'ט",
-            "החסימה מוסברת בעמוד חסימה בעברית (10.100.0.1)",
-            "יציאה ישירה (בלי פרוקסי) — מהיר",
-            "וואטסאפ נשאר פתוח",
+            "כל מה שיש ברמה 3",
+            "טיקטוק, אינסטגרם, פייסבוק, רדיט, X וסנאפצ'ט חסומים",
+            "אם מנסים להיכנס רואים דף הסבר נעים בעברית",
+            "וואטסאפ נשאר פתוח לשיחות",
         ],
-        "dns": "CoreDNS :5354 (סינון חברתי) — ישיר",
+        "dns": "בלי רשתות חברתיות",
     },
 }
 
-# ── Shared styles / layout ──────────────────────────────────────────────
 def _layout(title, body):
     return f"""<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -116,10 +118,12 @@ input:focus,select:focus{{outline:2px solid #93c5fd;border-color:#93c5fd}}
 .err{{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:10px 12px;margin:12px 0}}
 .ok{{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:10px 12px;margin:12px 0}}
 a.btnlink{{display:inline-block;background:#2563eb;color:#fff;border-radius:10px;padding:10px 16px;margin:6px 6px 0 0;text-decoration:none;font-weight:700}}
+a.btn-ca{{display:inline-block;background:#f59e0b;color:#fff;border-radius:10px;padding:10px 16px;margin:6px 6px 0 0;text-decoration:none;font-weight:700}}
 .nav{{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}} .nav a{{text-decoration:none}}
 small.mut{{color:var(--mut)}} .mono{{font-family:ui-monospace,Consolas,monospace}} .hr{{height:1px;background:var(--border);margin:16px 0}}
 .tier-radio{{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:10px;margin:6px 0;cursor:pointer}} .tier-radio:has(input:checked){{border-color:var(--pri);background:#f0fdf4}}
 .tier-radio input{{width:auto}} .tier-meta{{font-size:12px;color:var(--mut)}}
+.ca-box{{background:#fffbeb;border:1px solid #fcd34a;border-radius:12px;padding:12px 14px;margin:12px 0}}
 </style></head><body><div class="wrap">{body}</div></body></html>"""
 
 def _tiers_grid(selected=3):
@@ -127,67 +131,66 @@ def _tiers_grid(selected=3):
     for tid in [1,2,3,4]:
         d = TIER_DETAILS[tid]
         points = "".join(f"<li>{p}</li>" for p in d["points"])
-        sel = " 🟢 נבחר כברירת מחדל" if tid==selected else ""
+        sel = " ⭐ מומלץ" if tid==selected else ""
         html += f"""<div class="card tier" style="--tier:{d['color']}">
 <div style="font-size:26px">{d['icon']}</div>
 <h3>{d['title']}{sel}</h3>
-<div class="sub">{d['subtitle']} · {d['for_who']}</div>
+<div class="sub">{d['subtitle']}</div>
+<div style="font-size:13px;color:#0ea5e9;margin:4px 0">{d['for_who']}</div>
 <ul>{points}</ul>
-<div style="margin-top:10px"><span class="pill">{d['dns']}</span></div>
 </div>"""
     html += "</div>"
-    html += """<div class="card" style="margin-top:4px"><b>ℹ️ איך זה עובד?</b>
-<div class="mut" style="font-size:14px;line-height:1.6;margin-top:6px">
-כל מכשיר מקבל כתובת VPN לפי הרמה: <span class="mono">10.100.⟨רמה⟩.x</span> — אותה כתובת קובעת את ה-DNS והפרוקסי שלו אוטומטית.
-החלפת רמה = מעבר לכתובת חדשה בטווח של הרמה החדשה + קובץ הגדרות חדש. אין צורך להגדיר כלום במכשיר מעבר לייבוא הקובץ.
-<span class="mono">pool .10–.250</span> היום, ניתן להרחבה ל-<span class="mono">/20</span> בלי למספר מחדש.
+    html += """<div class="card" style="margin-top:4px"><b>💡 איך זה עובד? פשוט מאוד</b>
+<div class="mut" style="font-size:14px;line-height:1.7;margin-top:6px">
+1️⃣ בוחרים רמה כאן באתר ומקבלים קובץ קטן.<br>
+2️⃣ מתקינים אפליקציה חינמית בשם <b>WireGuard</b> ופותחים בה את הקובץ (או סורקים קוד).<br>
+3️⃣ מפעילים — וזהו! כל האינטרנט במכשיר הזה מסונן לפי הרמה שבחרת.<br>
+רוצה לשנות רמה? נכנסים שוב, בוחרים רמה אחרת ומקבלים קובץ חדש — לא צריך למחוק כלום.
 </div></div>"""
     return html
 
+def _ca_box():
+    return """<div class="ca-box">
+<b>📜 קובץ אבטחה לרמות 2 ו-3</b> <span style="font-size:12px;color:#92400e">— רק אם בחרת רמה 2 או 3</span><br>
+<small class="mut" style="line-height:1.7">אם בחרת רמה 2 או 3 צריך להתקין פעם אחת קובץ קטן:<br>
+<b>אנדרואיד:</b> לחץ הורד → פתח את הקובץ → אשר התקנה.<br>
+<b>אייפון:</b> לחץ הורד → פתח את הקובץ → לך להגדרות → אודות → אמון בתעודות → הפעל אמון.</small><br>
+<a class="btn-ca" href="/ca.crt" download>⬇️ הורד קובץ אבטחה</a>
+</div>"""
+
 def _enroll_form(msg_html=""):
     tiers_opts = "".join(
-        f'<label class="tier-radio"><input type="radio" name="tier" value="{tid}" {"checked" if tid==3 else ""}><span><b>{TIER_DETAILS[tid]["title"]}</b><br><span class="tier-meta">{TIER_DETAILS[tid]["subtitle"]} — {TIER_DETAILS[tid]["dns"]}</span></span></label>'
-        for tid in [1,2,3,4]
+        f'<label class="tier-radio"><input type="radio" name="tier" value="{tid}" {"checked" if tid==3 else ""}><span><b>{TIER_DETAILS[tid]["title"]}</b><br><span class="tier-meta">{TIER_DETAILS[tid]["subtitle"]} — {d["for_who"]}</span></span></label>'
+        for tid, d in TIER_DETAILS.items()
     )
     body = f"""
 <div class="hero">
-<div class="badge">ירושלים · il-jerusalem-1 · filter-vpn.duckdns.org</div>
-<h1>🛡️ FilterVPN — שירות הסינון הקהילתי</h1>
-<p>VPN מבוסס WireGuard לרשת מסוננת לפי רמות — בלי להגדיר כל מכשיר בנפרד. בוחרים רמה, מקבלים קובץ, מתחברים — וכל הגלישה מסוננת ברמת הרשת.</p>
+<div class="badge">שירות חינמי לקהילה · פשוט ובטוח</div>
+<h1>🛡️ FilterVPN — אינטרנט מסונן בקלות</h1>
+<p>בוחרים כמה לסנן, מקבלים קובץ אחד, ומדליקים. בלי סיסמאות ובלי הגדרות מסובכות.</p>
 <div class="nav">
 <a href="/" class="btn btn-ghost" style="padding:8px 12px">הרשמה</a>
 <a href="/change" class="btn btn-ghost" style="padding:8px 12px">🔄 החלפת רמה</a>
-<a href="https://filter-vpn.duckdns.org" class="btn btn-ghost" style="padding:8px 12px">בדיקת חיבור</a>
+<a href="/ca.crt" class="btn btn-ghost" style="padding:8px 12px">📜 קובץ אבטחה</a>
 </div>
 </div>
 
-<h2 style="margin:18px 0 6px">השוואת רמות סינון</h2>
+<h2 style="margin:18px 0 6px">בחרו כמה לסנן — הסבר פשוט</h2>
 {_tiers_grid(selected=3)}
 
 <div class="form-card">
-<h2 style="margin:0 0 8px">📝 הרשמה — קבלת קובץ WireGuard</h2>
-<div class="mut" style="font-size:14px">שם באנגלית בלבד (אותיות/מספרים/מקף), בחר רמה והזן קוד מנהל. בסיום תקבל קובץ <span class="mono">.conf</span> וקוד QR.</div>
+<h2 style="margin:0 0 8px">📝 יצירת חיבור חדש</h2>
+<div class="mut" style="font-size:14px">תנו שם למכשיר (למשל: הטלפון-של-אבא, טאבלט-הילדים) ובחרו רמה. תקבלו קובץ וקוד לסריקה — זה הכל.</div>
 {msg_html}
 <form method="post" action="/enroll">
-<label>שם משתמש</label>
-<input name="name" required pattern="[A-Za-z0-9_-]+" maxlength="32" placeholder="לדוגמה: moshe01">
-<label>בחר רמת סינון</label>
+<label>שם למכשיר (באנגלית, לדוגמה: tablet-yeladim)</label>
+<input name="name" required pattern="[A-Za-z0-9_-]+" maxlength="32" placeholder="לדוגמה: phone-abba">
+<label>כמה לסנן?</label>
 {tiers_opts}
-<label>קוד מנהל</label>
-<input name="token" type="password" required placeholder="קוד שקיבלת מהמנהל">
-<button class="btn" type="submit">הרשמה וקבלת קובץ ✅</button>
+<button class="btn" type="submit">צור קובץ חיבור ✅</button>
 </form>
-<div class="hr"></div>
-<small class="mut">📱 אחרי ההרשמה: התקן WireGuard מהחנות → ייבא את הקובץ או סרוק QR → הפעל. לרמות 2–3 התקן פעם אחת את <b>FilterVPN-RootCA.crt</b> (בקש מהמנהל) ואשר אמון בתעודה.</small>
-</div>
-
-<div class="card" style="margin-top:16px">
-<b>🔒 פרטיות ומגבלות</b><br>
-<small class="mut" style="line-height:1.6">
-• עד ~500 משתמשים בו-זמנית על שרת ה-Always-Free (2 OCPU/12GB). מעבר לכך — הוספת שרתים.<br>
-• אפליקציות עם אבטחת תעודה (YouTube/IG/TikTok) נאכפות ברמת DNS ומועברות ללא פענוח.<br>
-• HTTPS לאתרים חסומים יציג שגיאת חיבור (בלי MITM); HTTP יציג עמוד חסימה בעברית.
-</small>
+{_ca_box()}
+<small class="mut">📱 אחרי זה: התקינו אפליקציה בשם <b>WireGuard</b> (חינם בחנות) → פתחו אותה → לחצו + → בחרו את הקובץ או סרקו את הקוד → הדליקו. זהו!</small>
 </div>
 """
     return _layout("הרשמה", body)
@@ -195,73 +198,66 @@ def _enroll_form(msg_html=""):
 def _change_form(msg_html=""):
     tiers_opts = "".join(
         f'<label class="tier-radio"><input type="radio" name="new_tier" value="{tid}" {"checked" if tid==3 else ""}><span><b>{TIER_DETAILS[tid]["title"]}</b><br><span class="tier-meta">{TIER_DETAILS[tid]["subtitle"]}</span></span></label>'
-        for tid in [1,2,3,4]
+        for tid, d in TIER_DETAILS.items()
     )
     body = f"""
 <div class="hero">
-<div class="badge">ניהול משתמש קיים</div>
-<h1>🔄 החלפת רמת סינון</h1>
-<p>הרמה אינה קבועה — אפשר לעבור בין רמות בכל עת. המעבר מקצה כתובת חדשה וקובץ הגדרות חדש (יש לייבא מחדש ב-WireGuard).</p>
+<div class="badge">שינוי פשוט</div>
+<h1>🔄 רוצים לשנות כמה לסנן?</h1>
+<p>בחרו שם שכבר יצרתם ורמה חדשה. תקבלו קובץ חדש — פתחו אותו ב-WireGuard וזה מתעדכן.</p>
 <div class="nav">
 <a href="/" class="btn btn-ghost" style="padding:8px 12px">← חזרה להרשמה</a>
+<a href="/ca.crt" class="btn btn-ghost" style="padding:8px 12px">📜 קובץ אבטחה</a>
 </div>
 </div>
 
 <div class="form-card">
-<h2 style="margin:0 0 8px">החלפת רמה למשתמש קיים</h2>
-<div class="mut" style="font-size:14px">הזן את שם המשתמש הקיים, קוד מנהל, ובחר את הרמה החדשה.</div>
+<h2 style="margin:0 0 8px">החלפת רמה</h2>
+<div class="mut" style="font-size:14px">כתבו את אותו שם שנתתם בהרשמה ובחרו רמה חדשה.</div>
 {msg_html}
 <form method="post" action="/change">
-<label>שם משתמש קיים</label>
-<input name="name" required pattern="[A-Za-z0-9_-]+" maxlength="32" placeholder="moshe01">
+<label>שם המכשיר שיצרתם</label>
+<input name="name" required pattern="[A-Za-z0-9_-]+" maxlength="32" placeholder="לדוגמה: phone-abba">
 <label>רמה חדשה</label>
 {tiers_opts}
-<label>קוד מנהל</label>
-<input name="token" type="password" required>
-<div class="row">
-<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="keep_keys" value="1"> שמור מפתחות (אותו קובץ, רק כתובת משתנה — מתקדם)</label>
-</div>
-<button class="btn btn-secondary" type="submit">החלפת רמה 🔄</button>
+<button class="btn btn-secondary" type="submit">עדכן רמה 🔄</button>
 </form>
+{_ca_box()}
 </div>
 
-<h3 style="margin:18px 0 8px">מה קורה בהחלפה?</h3>
 <div class="card"><small class="mut" style="line-height:1.7">
-• המשתמש עובר מטווח <span class="mono">10.100.⟨ישן⟩.x</span> ל-<span class="mono">10.100.⟨חדש⟩.x</span>.<br>
-• קובץ ה-<span class="mono">.conf</span> וה-QR החדשים נוצרים אוטומטית — יש להוריד ולייבא מחדש.<br>
-• החיבור הישן נחסם מיד (ה-peer הישן נמחק מ-<span class="mono">wg0.conf</span> ומהממשק החי).<br>
-• אם מסומן “שמור מפתחות”, ה-PrivateKey נשאר זהה ורק ה-IP משתנה.
+💡 אחרי שמחליפים רמה, צריך להוריד את הקובץ החדש ולפתוח אותו שוב באפליקציית WireGuard. החיבור הישן מפסיק לעבוד אוטומטית.
 </small></div>
 """
     return _layout("החלפת רמה", body)
 
-def _success_page(name, tier_he, ip, token):
+def _success_page(name, tier_he, ip):
     body = f"""
-<div class="hero"><h1>✅ נרשמת בהצלחה!</h1><p>שם: <b>{name}</b> · {tier_he} · כתובת: <span class="mono">{ip}</span></p></div>
+<div class="hero"><h1>✅ מוכן! הקובץ של {name} נוצר</h1><p>{tier_he} — הכל מוכן להפעלה</p></div>
 <div class="card" style="margin-top:16px">
-<div class="ok">הקובץ וה-QR מוכנים — הורד וייבא ל-WireGuard.</div>
-<p><a class="btnlink" href="/files/{name}.conf?token={token}">⬇️ הורדת קובץ ההגדרה</a>
-<a class="btnlink" href="/files/{name}.png?token={token}">🔳 הורדת קוד QR</a></p>
-<div class="hr"></div>
-<p style="line-height:1.7">
-1️⃣ התקן את <b>WireGuard</b> מהחנות.<br>
-2️⃣ ייבא את הקובץ או סרוק את ה-QR.<br>
-3️⃣ הפעל — הגלישה מסוננת לפי הרמה.
-</p>
-<small class="mut">רמות 2–3: התקן את FilterVPN-RootCA.crt וסמוך על התעודה.</small>
-<p style="margin-top:14px"><a href="/">← חזרה</a> · <a href="/change">החלפת רמה</a></p>
+<div class="ok">הורידו את הקובץ או סרקו את הקוד — ואז הדליקו באפליקציה.</div>
+<p><a class="btnlink" href="/files/{name}.conf">⬇️ הורד קובץ</a>
+<a class="btnlink" href="/files/{name}.png">🔳 הורד קוד לסריקה</a>
+<a class="btn-ca" href="/ca.crt">📜 קובץ אבטחה (אם צריך)</a></p>
+<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;margin:12px 0"><b>איך מפעילים? 3 צעדים פשוטים:</b><br>
+<small style="line-height:1.8">
+1️⃣ התקינו <b>WireGuard</b> מהחנות (אייקון לבן עם מנהרה).<br>
+2️⃣ פתחו את WireGuard → לחצו <b>+</b> → בחרו "ייבוא מקובץ" או "סרוק קוד".<br>
+3️⃣ לחצו על הכפתור להפעלה — כשזה כחול/ירוק, אתם מוגנים.
+</small></div>
+<p style="margin-top:14px"><a href="/">← יצירת חיבור נוסף</a> · <a href="/change">שינוי רמה</a></p>
 </div>
 """
     return _layout("נרשמת בהצלחה", body)
 
-def _change_success(name, tier_he, ip, token):
+def _change_success(name, tier_he, ip):
     body = f"""
-<div class="hero"><h1>🔄 הרמה הוחלפה בהצלחה!</h1><p>שם: <b>{name}</b> · {tier_he} · כתובת חדשה: <span class="mono">{ip}</span></p></div>
+<div class="hero"><h1>✅ הרמה עודכנה!</h1><p>הקובץ החדש של <b>{name}</b> מוכן — {tier_he}</p></div>
 <div class="card" style="margin-top:16px">
-<div class="ok">יש להוריד את הקובץ החדש ולייבא מחדש — החיבור הישן כבר לא תקף.</div>
-<p><a class="btnlink" href="/files/{name}.conf?token={token}">⬇️ הורדת קובץ מעודכן</a>
-<a class="btnlink" href="/files/{name}.png?token={token}">🔳 QR מעודכן</a></p>
-<p><a href="/">← הרשמה</a> · <a href="/change">החלפה נוספת</a></p>
+<div class="ok">הורידו את הקובץ החדש ופתחו אותו שוב ב-WireGuard. החיבור הישן יפסיק לעבוד.</div>
+<p><a class="btnlink" href="/files/{name}.conf">⬇️ הורד קובץ מעודכן</a>
+<a class="btnlink" href="/files/{name}.png">🔳 קוד מעודכן</a></p>
+<p><a href="/">← הרשמה</a> · <a href="/change">עוד שינוי</a></p>
 </div>
 """
     return _layout("הוחלף", body)
@@ -280,9 +276,6 @@ def _do_enroll(name: str, tier: int) -> str:
         raise ValueError(r.stderr.strip() or r.stdout.strip() or "enroll failed")
     m = re.search(r"Allocated (\S+)", r.stdout)
     ip = m.group(1) if m else ""
-    # hot-add peer to live wg0
-    # GEN prints peer block but does not add it; we add via change-tier logic or add-peer
-    # Extract pubkey from output and call add-peer
     pm = re.search(r"PublicKey\s*=\s*(\S+)", r.stdout)
     if pm and ip:
         try:
@@ -300,12 +293,16 @@ def _do_change(name: str, new_tier: int, keep_keys: bool = False) -> str:
     if r.returncode != 0:
         raise ValueError(r.stderr.strip() or r.stdout.strip() or "change failed")
     m = re.search(r"->\s+(\S+)\s+\(tier", r.stdout)
-    # fallback: find new IP in output
     if m:
         return m.group(1)
     m2 = re.search(r"(\d+\.\d+\.\d+\.\d+)", r.stdout)
     return m2.group(1) if m2 else ""
 
+def _find_ca():
+    for p in CA_CANDIDATES:
+        if os.path.isfile(p):
+            return p
+    return None
 
 # ── routes ───────────────────────────────────────────────────────────
 
@@ -320,35 +317,43 @@ def change_get():
 
 
 @app.post("/enroll", response_class=HTMLResponse)
-def enroll_form(name: str = Form(...), tier: int = Form(...), token: str = Form(...)):
-    if token != ADMIN_TOKEN:
-        return _enroll_form('<div class="err">❌ קוד מנהל שגוי.</div>')
+def enroll_form(name: str = Form(...), tier: int = Form(...)):
     if tier not in TIERS_HE or not _valid_name(name):
         return _enroll_form('<div class="err">❌ שם או רמה לא תקינים.</div>')
     try:
         ip = _do_enroll(name, tier)
     except ValueError as e:
         return _enroll_form(f'<div class="err">❌ ההרשמה נכשלה: {e}</div>')
-    return _success_page(name, TIERS_HE[tier], ip or "?", token)
+    return _success_page(name, TIERS_HE[tier], ip or "?")
 
 
 @app.post("/change", response_class=HTMLResponse)
-def change_form(name: str = Form(...), new_tier: int = Form(..., alias="new_tier"), token: str = Form(...), keep_keys: str = Form(default="")):
-    if token != ADMIN_TOKEN:
-        return _change_form('<div class="err">❌ קוד מנהל שגוי.</div>')
+def change_form(name: str = Form(...), new_tier: int = Form(..., alias="new_tier"), keep_keys: str = Form(default="")):
     if new_tier not in TIERS_HE or not _valid_name(name):
         return _change_form('<div class="err">❌ שם או רמה לא תקינים.</div>')
     try:
         ip = _do_change(name, new_tier, keep_keys=bool(keep_keys))
     except ValueError as e:
         return _change_form(f'<div class="err">❌ ההחלפה נכשלה: {e}</div>')
-    return _change_success(name, TIERS_HE[new_tier], ip or "?", token)
+    return _change_success(name, TIERS_HE[new_tier], ip or "?")
 
+
+@app.get("/ca.crt")
+def get_ca():
+    p = _find_ca()
+    if not p:
+        raise HTTPException(404, "CA not found on server — run proxy/ca/gen-ca.sh")
+    with open(p, "rb") as f:
+        data = f.read()
+    return Response(data, media_type="application/x-x509-ca-cert",
+                    headers={"Content-Disposition": "attachment; filename=FilterVPN-RootCA.crt"})
+
+@app.get("/FilterVPN-RootCA.crt")
+def get_ca_alias():
+    return get_ca()
 
 @app.get("/files/{fname}")
-def download_file(fname: str, token: str = ""):
-    if token != ADMIN_TOKEN:
-        raise HTTPException(401, "bad token")
+def download_file(fname: str):
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}\.(conf|png)", fname or ""):
         raise HTTPException(400, "bad filename")
     path = os.path.join(CLIENTS, fname)
@@ -366,9 +371,7 @@ class Enroll(BaseModel):
 
 
 @app.post("/api/enroll")
-def enroll_api(e: Enroll, x_admin_token: str = Header(default="")):
-    if x_admin_token != ADMIN_TOKEN:
-        raise HTTPException(401, "bad token")
+def enroll_api(e: Enroll):
     if e.tier not in TIERS_HE or not _valid_name(e.name):
         raise HTTPException(400, "bad name/tier")
     try:
@@ -387,9 +390,7 @@ class ChangeReq(BaseModel):
 
 
 @app.post("/api/change-tier")
-def change_api(req: ChangeReq, x_admin_token: str = Header(default="")):
-    if x_admin_token != ADMIN_TOKEN:
-        raise HTTPException(401, "bad token")
+def change_api(req: ChangeReq):
     if req.tier not in TIERS_HE or not _valid_name(req.name):
         raise HTTPException(400, "bad name/tier")
     try:
