@@ -206,6 +206,21 @@ def handle(conn):
                 break
         head, _, body = data.partition(b"\r\n\r\n")
         text = head.decode("latin1", "replace")
+        # Squid health-check: OPTIONS * — must answer 200 with Methods, otherwise Squid marks service down (causes 500 + slow fallback)
+        if text.lstrip().startswith("OPTIONS"):
+            opts = (
+                "ICAP/1.0 200 OK\r\n"
+                "Methods: RESPMOD\r\n"
+                "Service: FilterVPN RESPMOD\r\n"
+                "Options-TTL: 600\r\n"
+                "Allow: 204\r\n"
+                "Preview: 0\r\n"
+                "Transfer-Preview: *\r\n"
+                "Max-Connections: 20\r\n"
+                "\r\n"
+            )
+            conn.sendall(opts.encode("latin1"))
+            return
         m = re.search(r"Content-Type:\s*([^\r\n;]+)", text, re.I)
         ctype = m.group(1).strip().lower() if m else ""
         um = re.search(r"^(?:GET|POST)\s+(\S+)", text, re.M)

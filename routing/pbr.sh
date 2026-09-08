@@ -41,15 +41,17 @@ if [ "$MODE" = up ]; then
   # MSS clamp for WireGuard MTU issues
   iptables -t mangle -C FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || \
     iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-  # Per-tier DNS hijack -> local CoreDNS ports
-  iptables -t nat -C PREROUTING -i wg0 -s 10.100.1.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5351 2>/dev/null || \
-    iptables -t nat -A PREROUTING -i wg0 -s 10.100.1.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5351
-  iptables -t nat -C PREROUTING -i wg0 -s 10.100.2.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5352 2>/dev/null || \
-    iptables -t nat -A PREROUTING -i wg0 -s 10.100.2.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5352
-  iptables -t nat -C PREROUTING -i wg0 -s 10.100.3.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5353 2>/dev/null || \
-    iptables -t nat -A PREROUTING -i wg0 -s 10.100.3.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5353
-  iptables -t nat -C PREROUTING -i wg0 -s 10.100.4.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5354 2>/dev/null || \
-    iptables -t nat -A PREROUTING -i wg0 -s 10.100.4.0/24 -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:5354
+  # Per-tier DNS hijack -> local CoreDNS ports (both UDP and TCP — some clients use TCP)
+  for proto in udp tcp; do
+    iptables -t nat -C PREROUTING -i wg0 -s 10.100.1.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5351 2>/dev/null || \
+      iptables -t nat -A PREROUTING -i wg0 -s 10.100.1.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5351
+    iptables -t nat -C PREROUTING -i wg0 -s 10.100.2.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5352 2>/dev/null || \
+      iptables -t nat -A PREROUTING -i wg0 -s 10.100.2.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5352
+    iptables -t nat -C PREROUTING -i wg0 -s 10.100.3.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5353 2>/dev/null || \
+      iptables -t nat -A PREROUTING -i wg0 -s 10.100.3.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5353
+    iptables -t nat -C PREROUTING -i wg0 -s 10.100.4.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5354 2>/dev/null || \
+      iptables -t nat -A PREROUTING -i wg0 -s 10.100.4.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5354
+  done
   # Tier2/3 transparent proxy redirect (HTTP/HTTPS)
   for t in 2 3; do
     iptables -t nat -C PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 80 -j REDIRECT --to-port 3128 2>/dev/null || \

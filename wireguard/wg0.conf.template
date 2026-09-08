@@ -2,6 +2,7 @@
 Address = 10.100.0.1/16
 ListenPort = 51820
 PrivateKey = __SERVER_PRIVATE_KEY__
+MTU = 1380
 Table = off
 PostUp = /opt/filtervpn/routing/pbr.sh up
 PostDown = /opt/filtervpn/routing/pbr.sh down
