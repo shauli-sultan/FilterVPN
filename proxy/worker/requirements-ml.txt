@@ -1,0 +1,10 @@
+# Optional image-inspection model (CPU, ARM-compatible via onnxruntime).
+# Install on the SERVER (one time):
+#   pip install -r proxy/worker/requirements-ml.txt
+# First classify call downloads the open-source NudeNet model (~100-300MB,
+# one time) and caches it. Without these packages the worker keeps running
+# on its URL/size heuristic fallback.
+nudenet
+onnxruntime
+pillow
+numpy

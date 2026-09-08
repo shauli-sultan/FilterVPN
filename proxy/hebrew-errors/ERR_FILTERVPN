@@ -1,0 +1,16 @@
+<!-- Squid Hebrew deny page. Install on server (backup original first):
+     sudo cp /usr/share/squid/errors/ERR_ACCESS_DENIED /root/ERR_ACCESS_DENIED.bak
+     sudo cp proxy/hebrew-errors/ERR_FILTERVPN /usr/share/squid/errors/ERR_ACCESS_DENIED
+     Covers Squid-generated errors (e.g. blocked HTTPS CONNECT on Tier 2/3).
+     ICAP-blocked pages already return their own Hebrew HTML/SVG. -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html dir="rtl" lang="he"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>הגישה נחסמה | FilterVPN</title>
+<style>body{font-family:Arial,sans-serif;background:#f1f5f9;text-align:center;padding:3em 1em}
+.card{max-width:480px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:2em}</style>
+</head><body><div class="card"><div style="font-size:56px">&#128683;</div>
+<h1>הגישה נחסמה</h1>
+<p>הדף המבוקש נחסם על ידי מערכת הסינון FilterVPN.</p>
+<p><small>%U</small></p>
+<p><small>אם לדעתכם מדובר בטעות, פנו למנהל המערכת.</small></p>
+</div></body></html>

@@ -104,9 +104,12 @@ sudo cp ~/filtervpn/proxy/ca/squid-dynamic.pem /opt/filtervpn/proxy/ca/squid-dyn
 sudo systemctl restart squid
 sudo systemctl enable squid
 
-# ICAP content worker (heuristic MVP, stdlib only)
+# ICAP content worker: image inspection (NudeNet model if installed, else heuristic)
 nohup python3 ~/filtervpn/proxy/worker/icap_worker.py >/var/log/icap-worker.log 2>&1 &
 sleep 1; cat /var/log/icap-worker.log
+# Optional: real nudity detection (open-source NudeNet, onnxruntime CPU, one-time ~100-300MB download)
+pip install -r ~/filtervpn/proxy/worker/requirements-ml.txt
+# then restart the worker; blocked images are replaced with a Hebrew "image blocked" SVG
 curl -x http://127.0.0.1:3128 -I http://example.com | head -3
 ```
 
@@ -124,6 +127,28 @@ Certificate Trust Settings → enable full trust.
 > Squid only intercepts Tier 2/3 (`pbr.sh` REDIRECTs). Tier 1/4 go direct.
 > YouTube/social/banking are spliced, never MITM'd (certificate pinning) —
 > those are enforced at DNS level instead.
+
+### Block page server (Hebrew explanation instead of connection failure)
+
+Blocked domains resolve to `10.100.0.1` — this serves the Hebrew "site
+blocked + why" page on port 80 there:
+
+```bash
+sudo mkdir -p /opt/filtervpn/blockpage
+sudo cp ~/filtervpn/blockpage/server.py ~/filtervpn/blockpage/block.html /opt/filtervpn/blockpage/
+sudo cp ~/filtervpn/blockpage/filtervpn-blockpage.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now filtervpn-blockpage
+curl -H "Host: pornhub.com" http://10.100.0.1/ | head -5   # Hebrew 403 page
+```
+
+Optional Hebrew Squid error page (for Squid-generated HTTPS errors on Tier 2/3):
+
+```bash
+sudo cp /usr/share/squid/errors/ERR_ACCESS_DENIED /root/ERR_ACCESS_DENIED.bak
+sudo cp ~/filtervpn/proxy/hebrew-errors/ERR_FILTERVPN /usr/share/squid/errors/ERR_ACCESS_DENIED
+sudo systemctl reload squid
+```
 
 ---
 
@@ -176,7 +201,11 @@ bash ~/filtervpn/tests/test-wireguard-load.sh
 ```
 
 Expected: `www.youtube.com` resolves normally on 5351/5352 but CNAMEs to
-`restrict.youtube.com` on 5353/5354; `tiktok.com` sinks to `0.0.0.0` on 5354.
+`restrict.youtube.com` on 5353/5354; `tiktok.com` and all porn/hentai domains
+resolve to `10.100.0.1` — open `http://<any-blocked-site>/` in a browser to see
+the Hebrew block explanation. (HTTPS to blocked domains can't show the page
+without MITM — browser shows a connection error instead; Tier 2/3 HTTPS gets
+the Hebrew Squid/ICAP block page.)
 
 ---
 
