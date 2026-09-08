@@ -1,0 +1,11 @@
+# Tier 1 (Basic) — port 5351. Malware/phishing + extreme adult block, else upstream.
+.:5351 {
+  errors
+  log
+  cache 60
+  file /opt/filtervpn/coredns/blocklists/malware.db malware.local
+  file /opt/filtervpn/coredns/blocklists/adult.db adult.local
+  forward . 1.1.1.1 8.8.8.8 {
+    max_concurrent 1000
+  }
+}

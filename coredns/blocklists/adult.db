@@ -1,0 +1,5 @@
+$ORIGIN adult.local.
+@   IN SOA ns1.admin. admin. (1 7200 3600 1209600 60)
+    IN NS  localhost.
+; Populated by update-blocklists.sh from a curated adult list.
+extreme-example.test IN A 0.0.0.0

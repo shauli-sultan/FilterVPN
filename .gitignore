@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.key
+*.conf.local
+wireguard/clients/
+wireguard/ipam.db
+proxy/ca/*.pem
+proxy/ca/*.key
+portal/*.db
+.terraform/
+*.tfstate*
