@@ -34,7 +34,7 @@ Adding a user = allocating an IP in their tier's pool and adding one
 | **1 Basic** | `10.100.1.0/24` (→`/20`) | :5351 | Porn/hentai/adult + malware/phishing DNS block (71+ base domains, regex apex + subdomains → Hebrew block page) + Google SafeSearch. Everything else full speed, direct egress |
 | **2 Standard** | `10.100.2.0/24` (→`/20`) | :5352 | Tier 1 + transparent Squid proxy with heuristic image/URL screening (needs Root CA on device) |
 | **3 Strict + YouTube** | `10.100.3.0/24` (→`/20`) | :5353 | Tier 2 + YouTube Restricted Mode + Google SafeSearch (CNAMEs → `restrict.youtube.com` / `forcesafesearch.google.com`) |
-| **4 Max block** | `10.100.4.0/24` (→`/20`) | :5354 | Tier 3 DNS + TikTok/Instagram/Facebook/Reddit/X/Snapchat sent to the Hebrew block page; direct egress (no proxy) |
+| **4 Max block** | `10.100.4.0/24` (→`/20`) | :5354 | Tier 3 DNS + TikTok/Instagram/Facebook/Reddit/X/Snapchat sent to the Hebrew block page; WhatsApp stays available on all tiers; direct egress (no proxy) |
 
 Server itself: `10.100.0.1/16` on `wg0`. Each `/24` holds 240+ clients today
 (.10–.250) and expands to a `/20` (~4000) without renumbering.

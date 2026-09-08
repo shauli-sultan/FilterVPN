@@ -15,6 +15,13 @@ for port in 5351 5352 5353 5354; do
     dig +short @127.0.0.1 -p "$port" "$d" | head -1
   done
 done
+echo "== ALL tiers (5351-5354): whatsapp must resolve NORMALLY (never blocked) =="
+for port in 5351 5352 5353 5354; do
+  for d in whatsapp.com web.whatsapp.com; do
+    printf "port %s %-18s -> " "$port" "$d"
+    dig +short @127.0.0.1 -p "$port" "$d" | head -2 | tr '\n' ' '; echo
+  done
+done
 echo "== Tier4: youtube still restricted =="
 dig +short @127.0.0.1 -p 5354 www.youtube.com | head -3
 echo "== ALL tiers (5351-5354): google must CNAME forcesafesearch.google.com =="
