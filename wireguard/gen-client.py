@@ -79,7 +79,7 @@ def main():
 PrivateKey = {cpriv}
 Address = {ip}/16
 DNS = {DNS_IP}
-MTU = 1380
+MTU = 1420
 
 [Peer]
 PublicKey = {spub}
