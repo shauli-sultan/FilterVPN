@@ -1,7 +1,8 @@
 # Tier 1 (Basic) — port 5351. Blocks only porn/adult + phishing/malware. Everything else open. Upstream: adult-filter-dns.cleanbrowsing.org
 .:5351 {
   errors
-  log
+  # log disabled for perf (was per-query, killed throughput under load)
+  # log
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
   cache 60

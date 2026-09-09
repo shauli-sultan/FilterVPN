@@ -1,7 +1,8 @@
 # Tier 2 (Video Protected) — port 5352. Tier1 + Enforced YouTube Restricted Mode (SafeSearch). Upstream: adult-filter-dns.cleanbrowsing.org
 .:5352 {
   errors
-  log
+  # log disabled for perf
+  # log
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
   import /opt/filtervpn/coredns/safesearch.conf

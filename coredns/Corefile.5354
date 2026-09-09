@@ -1,7 +1,8 @@
 # Tier 4 (Full/Max Block) — port 5354. Comprehensive social + distractions + YouTube Restricted + Tier1. Upstream: family-filter-dns.cleanbrowsing.org
 .:5354 {
   errors
-  log
+  # log disabled for perf
+  # log
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
   import /opt/filtervpn/coredns/blocklists/block-social-strict.conf

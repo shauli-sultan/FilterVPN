@@ -1,7 +1,8 @@
 # Tier 3 (No Mixed Content Sites) — port 5353. Tier2 + Blocking mixed-content/open platforms (Reddit, X/Twitter, Imgur, etc.). Upstream: family-filter-dns.cleanbrowsing.org
 .:5353 {
   errors
-  log
+  # log disabled for perf
+  # log
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
   import /opt/filtervpn/coredns/blocklists/block-social.conf
