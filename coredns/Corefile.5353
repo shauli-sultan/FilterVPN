@@ -2,7 +2,6 @@
 .:5353 {
   errors
   # log disabled for perf
-  # log
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-malware.conf
   import /opt/filtervpn/coredns/blocklists/block-social.conf

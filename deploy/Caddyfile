@@ -1,9 +1,20 @@
-# Caddyfile for FilterVPN — portal + block page
-# filter-vpn.duckdns.org → portal (127.0.0.1:8000) with auto TLS via Let's Encrypt
-# http://10.100.0.1 → Hebrew block page (127.0.0.1:8081) — sink for DNS-blocked domains
+# WayGuard — Caddyfile for portal + DoT hostnames + block page
+# All hostnames get auto TLS via Let's Encrypt HTTP-01 on :80
 filter-vpn.duckdns.org {
     reverse_proxy 127.0.0.1:8000
     encode gzip
+}
+yishiva-basic.duckdns.org {
+    respond "WayGuard DoT — Tier 1 Basic" 200
+}
+yishiva-filtered.duckdns.org {
+    respond "WayGuard DoT — Tier 2 Filtered" 200
+}
+yishiva-mehadrin.duckdns.org {
+    respond "WayGuard DoT — Tier 3 Mehadrin" 200
+}
+yishiva-super.duckdns.org {
+    respond "WayGuard DoT — Tier 4 Super" 200
 }
 http://10.100.0.1 {
     reverse_proxy 127.0.0.1:8081

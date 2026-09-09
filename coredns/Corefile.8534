@@ -1,5 +1,5 @@
-tls /etc/coredns/tls/combined-fullchain.pem /etc/coredns/tls/combined-key.pem
 tls://.:8534 {
+  tls /etc/coredns/tls/combined-fullchain.pem /etc/coredns/tls/combined-key.pem
   errors
   import /opt/filtervpn/coredns/blocklists/block-porn.conf
   import /opt/filtervpn/coredns/blocklists/block-social.conf
