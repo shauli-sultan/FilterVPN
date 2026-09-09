@@ -1,0 +1,23 @@
+# Social/media block for NEW Tier2 (10.100.2.0/24) — all medias blocked but YT + LinkedIn + WhatsApp stay open.
+# Apex only, one per line. Sunk to 10.100.0.1 on Tier2 ONLY (Corefile.5352 imports block-social-strict.conf).
+# Explicitly NOT blocked here: youtube.com, youtu.be, googlevideo.com, linkedin.com, whatsapp.com/net, whatsapp.net
+facebook.com
+instagram.com
+tiktok.com
+snapchat.com
+reddit.com
+twitter.com
+x.com
+tumblr.com
+imgur.com
+4chan.org
+8ch.net
+8kun.top
+livejournal.com
+vk.com
+discord.com
+twitch.tv
+pinterest.com
+threads.net
+wechat.com
+telegram.org

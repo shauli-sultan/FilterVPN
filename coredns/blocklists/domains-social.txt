@@ -1,9 +1,12 @@
-# Social/distraction base domains — apex only, one per line.
-# Sunk to 0.0.0.0 on TIER 4 ONLY (Corefile.5354 imports block-social.conf).
-facebook.com
-instagram.com
+# Mixed-content / open platforms with NSFW exposure — apex only, one per line.
+# Sunk to 10.100.0.1 on Tier 3 (No Mixed Content) and Tier 4 (Full) — Corefile.5353/5354.
+# CleanBrowsing Family Filter (Tier 3-4 upstream) also blocks many of these, but local block ensures Hebrew block page (not just NXDOMAIN).
 reddit.com
-snapchat.com
-tiktok.com
 twitter.com
 x.com
+imgur.com
+tumblr.com
+4chan.org
+8ch.net
+8kun.top
+livejournal.com

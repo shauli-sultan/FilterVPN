@@ -52,13 +52,14 @@ if [ "$MODE" = up ]; then
     iptables -t nat -C PREROUTING -i wg0 -s 10.100.4.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5354 2>/dev/null || \
       iptables -t nat -A PREROUTING -i wg0 -s 10.100.4.0/24 -p $proto --dport 53 -j DNAT --to-destination 127.0.0.1:5354
   done
-  # Tier2/3 transparent proxy redirect (HTTP/HTTPS)
-  for t in 2 3; do
-    iptables -t nat -C PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 80 -j REDIRECT --to-port 3128 2>/dev/null || \
-      iptables -t nat -A PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 80 -j REDIRECT --to-port 3128
-    iptables -t nat -C PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 443 -j REDIRECT --to-port 3129 2>/dev/null || \
-      iptables -t nat -A PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 443 -j REDIRECT --to-port 3129
-  done
+  # Proxy removed — Tier2 proxy caused slowdown (ICAP). All tiers now direct NAT (fast). No REDIRECT to squid.
+  # To re-enable proxy for image filtering, uncomment the block below and enable squid+icap.
+  # for t in 2 3; do
+  #   iptables -t nat -C PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 80 -j REDIRECT --to-port 3128 2>/dev/null || \
+  #     iptables -t nat -A PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 80 -j REDIRECT --to-port 3128
+  #   iptables -t nat -C PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 443 -j REDIRECT --to-port 3129 2>/dev/null || \
+  #     iptables -t nat -A PREROUTING -i wg0 -s "10.100.${t}.0/24" -p tcp --dport 443 -j REDIRECT --to-port 3129
+  # done
   # Block common DoH endpoints + DoT to force tier DNS
   for doh in 1.1.1.1 8.8.8.8 9.9.9.9; do
     iptables -C FORWARD -i wg0 -d "$doh" -p tcp --dport 443 -j DROP 2>/dev/null || \

@@ -14,7 +14,7 @@ import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BL = os.path.join(HERE, "blocklists")
-GROUPS = ("porn", "malware", "social")
+GROUPS = ("porn", "malware", "social", "social-strict")
 BLOCK_IP = os.environ.get("FILTERVPN_BLOCK_IP", "10.100.0.1")
 
 
