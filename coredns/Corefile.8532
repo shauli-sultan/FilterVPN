@@ -1,0 +1,15 @@
+tls /etc/coredns/tls/combined-fullchain.pem /etc/coredns/tls/combined-key.pem
+tls://.:8532 {
+  errors
+  import /opt/filtervpn/coredns/blocklists/block-porn.conf
+  import /opt/filtervpn/coredns/safesearch.conf
+  cache 60
+  rewrite name exact www.youtube.com restrict.youtube.com answer auto
+  rewrite name exact m.youtube.com restrict.youtube.com answer auto
+  rewrite name exact youtubei.googleapis.com restrict.youtube.com answer auto
+  rewrite name exact youtube.googleapis.com restrict.youtube.com answer auto
+  rewrite name exact www.youtube-nocookie.com restrict.youtube.com answer auto
+  forward . 185.228.168.10 185.228.169.11 {
+    max_concurrent 1000
+  }
+}
